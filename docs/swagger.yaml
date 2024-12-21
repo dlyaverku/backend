@@ -1,0 +1,60 @@
+basePath: /
+definitions:
+  models.User:
+    properties:
+      email:
+        description: Email
+        type: string
+      id:
+        description: Уникальный ID
+        type: integer
+      username:
+        description: Имя пользователя
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API для работы с пользователями.
+  title: User API
+  version: "1.0"
+paths:
+  /users:
+    get:
+      description: Возвращает JSON со списком пользователей
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
+      summary: Get all users
+      tags:
+      - Users
+  /users/{id}:
+    get:
+      description: Возвращает JSON с данными пользователя
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "404":
+          description: User not found
+          schema:
+            type: string
+      summary: Get user by ID
+      tags:
+      - Users
+swagger: "2.0"
