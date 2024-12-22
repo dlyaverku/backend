@@ -1,10 +1,10 @@
 package main
 
 import (
-	_ "backend/docs" // Подключаем сгенерированные Swagger-документы
+	_ "backend/docs"
 	"backend/handlers"
 
-	"github.com/gin-contrib/cors" // Подключаем библиотеку для работы с CORS
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
 	swaggerFiles "github.com/swaggo/files"
@@ -17,16 +17,15 @@ import (
 // @host localhost:8081
 // @BasePath /
 func main() {
-	// Создаем новый роутер
 	router := gin.Default()
 
-	// Настройка CORS middleware
+	// Настройка CORS
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://5.35.83.98/"},                      // Разрешаем запросы с фронтенда на localhost:3000
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},            // Разрешаем методы
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"}, // Разрешаем заголовки
+		AllowOrigins:     []string{"http://5.35.83.98"}, // Удаляем конечный слэш
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true, // Разрешаем использование cookies и заголовков авторизации
+		AllowCredentials: true,
 	}))
 
 	// Маршруты API

@@ -12,7 +12,7 @@ definitions:
         description: Имя пользователя
         type: string
     type: object
-host: localhost:8080
+host: localhost:8081
 info:
   contact: {}
   description: API для работы с пользователями.
