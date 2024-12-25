@@ -9,16 +9,108 @@
     "host": "localhost:8081",
     "basePath": "/",
     "paths": {
-        "/users": {
-            "get": {
-                "description": "Возвращает JSON со списком пользователей",
+        "/confirm": {
+            "post": {
+                "description": "Подтверждает email пользователя с помощью кода",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Users"
+                    "auth"
                 ],
-                "summary": "Get all users",
+                "summary": "Подтверждение email",
+                "parameters": [
+                    {
+                        "description": "Email и код подтверждения",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/register": {
+            "post": {
+                "description": "Регистрирует нового пользователя и отправляет код подтверждения на email",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Регистрация пользователя",
+                "parameters": [
+                    {
+                        "description": "Данные пользователя",
+                        "name": "user",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.User"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.SuccessResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/handlers.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/users": {
+            "get": {
+                "description": "Возвращает список всех пользователей",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Получить всех пользователей",
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -34,18 +126,21 @@
         },
         "/users/{id}": {
             "get": {
-                "description": "Возвращает JSON с данными пользователя",
+                "description": "Возвращает пользователя по его ID",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "Users"
+                    "users"
                 ],
-                "summary": "Get user by ID",
+                "summary": "Получить пользователя по ID",
                 "parameters": [
                     {
-                        "type": "integer",
-                        "description": "User ID",
+                        "type": "string",
+                        "description": "ID пользователя",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -59,9 +154,9 @@
                         }
                     },
                     "404": {
-                        "description": "User not found",
+                        "description": "Not Found",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/handlers.ErrorResponse"
                         }
                     }
                 }
@@ -69,16 +164,39 @@
         }
     },
     "definitions": {
+        "handlers.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                }
+            }
+        },
+        "handlers.SuccessResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "models.User": {
             "type": "object",
             "properties": {
+                "confirmation": {
+                    "type": "string"
+                },
+                "confirmed": {
+                    "type": "boolean"
+                },
                 "email": {
-                    "description": "Email",
                     "type": "string"
                 },
                 "id": {
-                    "description": "Уникальный ID",
                     "type": "integer"
+                },
+                "password": {
+                    "type": "string"
                 },
                 "username": {
                     "description": "Имя пользователя",

@@ -1,8 +1,11 @@
 package models
 
-// User представляет модель данных пользователя
+// User represents a user in the database
 type User struct {
-	ID       int    `json:"id"`       // Уникальный ID
-	Username string `json:"username"` // Имя пользователя
-	Email    string `json:"email"`    // Email
+	ID           int    `gorm:"primaryKey"`
+	Email        string `gorm:"unique"`
+	Username     string `json:"username"` // Имя пользователя
+	Password     string
+	Confirmation string
+	Confirmed    bool
 }

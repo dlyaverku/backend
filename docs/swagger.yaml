@@ -1,13 +1,27 @@
 basePath: /
 definitions:
+  handlers.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  handlers.SuccessResponse:
+    properties:
+      message:
+        type: string
+    type: object
   models.User:
     properties:
+      confirmation:
+        type: string
+      confirmed:
+        type: boolean
       email:
-        description: Email
         type: string
       id:
-        description: Уникальный ID
         type: integer
+      password:
+        type: string
       username:
         description: Имя пользователя
         type: string
@@ -19,9 +33,70 @@ info:
   title: User API
   version: "1.0"
 paths:
+  /confirm:
+    post:
+      consumes:
+      - application/json
+      description: Подтверждает email пользователя с помощью кода
+      parameters:
+      - description: Email и код подтверждения
+        in: body
+        name: input
+        required: true
+        schema:
+          additionalProperties:
+            type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/handlers.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Подтверждение email
+      tags:
+      - auth
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: Регистрирует нового пользователя и отправляет код подтверждения
+        на email
+      parameters:
+      - description: Данные пользователя
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/handlers.SuccessResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Регистрация пользователя
+      tags:
+      - auth
   /users:
     get:
-      description: Возвращает JSON со списком пользователей
+      consumes:
+      - application/json
+      description: Возвращает список всех пользователей
       produces:
       - application/json
       responses:
@@ -31,18 +106,20 @@ paths:
             items:
               $ref: '#/definitions/models.User'
             type: array
-      summary: Get all users
+      summary: Получить всех пользователей
       tags:
-      - Users
+      - users
   /users/{id}:
     get:
-      description: Возвращает JSON с данными пользователя
+      consumes:
+      - application/json
+      description: Возвращает пользователя по его ID
       parameters:
-      - description: User ID
+      - description: ID пользователя
         in: path
         name: id
         required: true
-        type: integer
+        type: string
       produces:
       - application/json
       responses:
@@ -51,10 +128,10 @@ paths:
           schema:
             $ref: '#/definitions/models.User'
         "404":
-          description: User not found
+          description: Not Found
           schema:
-            type: string
-      summary: Get user by ID
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Получить пользователя по ID
       tags:
-      - Users
+      - users
 swagger: "2.0"
