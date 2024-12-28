@@ -6,6 +6,7 @@ import (
 	"backend/models"
 	"backend/utils"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -16,6 +17,21 @@ type ErrorResponse struct {
 
 type SuccessResponse struct {
 	Message string `json:"message"`
+}
+
+// ConfirmRequest описывает тело запроса для подтверждения email
+// swagger:model ConfirmRequest
+type ConfirmRequest struct {
+	Email string `json:"email" example:"user@example.com"`
+	Code  string `json:"code" example:"123456"`
+}
+
+// RegisterRequest описывает тело запроса для регистрации пользователя
+// swagger:model RegisterRequest
+type RegisterRequest struct {
+	Email    string `json:"email" example:"user@example.com"`
+	Username string `json:"username" example:"JohnDoe"`
+	Password string `json:"password" example:"password123"`
 }
 
 // GetUsers godoc
@@ -58,23 +74,40 @@ func GetUserByID(c *gin.Context) {
 // @Tags auth
 // @Accept  json
 // @Produce  json
-// @Param user body models.User true "Данные пользователя"
+// @Param input body RegisterRequest true "Данные пользователя"
 // @Success 201 {object} SuccessResponse
 // @Failure 400 {object} ErrorResponse
 // @Failure 500 {object} ErrorResponse
 // @Router /register [post]
 func RegisterHandler(c *gin.Context) {
-	var user models.User
-	if err := c.ShouldBindJSON(&user); err != nil {
+	// Входящие данные только с нужными полями
+	var input RegisterRequest
+	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
 	}
 
-	user.Confirmation = utils.GenerateCode()
-	user.Confirmed = false
+	// Генерация Confirmation кода и таймера
+	confirmationCode := utils.GenerateCode()
+	confirmationExpiresAt := time.Now().Add(10 * time.Minute)
 
-	database.DB.Create(&user)
+	// Создаем объект пользователя
+	user := models.User{
+		Email:                 input.Email,
+		Username:              input.Username,
+		Password:              input.Password, // Хэшируем пароль
+		Confirmation:          confirmationCode,
+		Confirmed:             false,
+		ConfirmationExpiresAt: confirmationExpiresAt,
+	}
 
+	// Сохраняем пользователя в базе
+	if err := database.DB.Create(&user).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to create user"})
+		return
+	}
+
+	// Отправляем письмо с кодом подтверждения
 	if err := utils.SendEmail(user.Email, user.Confirmation); err != nil {
 		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to send email"})
 		return
@@ -89,15 +122,12 @@ func RegisterHandler(c *gin.Context) {
 // @Tags auth
 // @Accept  json
 // @Produce  json
-// @Param input body map[string]string true "Email и код подтверждения"
+// @Param input body ConfirmRequest true "Email и код подтверждения"
 // @Success 200 {object} SuccessResponse
 // @Failure 400 {object} ErrorResponse
 // @Router /confirm [post]
 func ConfirmHandler(c *gin.Context) {
-	var input struct {
-		Email string `json:"email"`
-		Code  string `json:"code"`
-	}
+	var input ConfirmRequest
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: err.Error()})
 		return
@@ -106,6 +136,14 @@ func ConfirmHandler(c *gin.Context) {
 	var user models.User
 	if err := database.DB.Where("email = ? AND confirmation = ?", input.Email, input.Code).First(&user).Error; err != nil {
 		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid code"})
+		return
+	}
+
+	// Проверяем, истек ли код подтверждения
+	if time.Now().After(user.ConfirmationExpiresAt) {
+		// Удаляем пользователя
+		database.DB.Delete(&user)
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Confirmation code expired"})
 		return
 	}
 

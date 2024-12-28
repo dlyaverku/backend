@@ -1,8 +1,29 @@
 basePath: /
 definitions:
+  handlers.ConfirmRequest:
+    properties:
+      code:
+        example: "123456"
+        type: string
+      email:
+        example: user@example.com
+        type: string
+    type: object
   handlers.ErrorResponse:
     properties:
       error:
+        type: string
+    type: object
+  handlers.RegisterRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      password:
+        example: password123
+        type: string
+      username:
+        example: JohnDoe
         type: string
     type: object
   handlers.SuccessResponse:
@@ -12,18 +33,19 @@ definitions:
     type: object
   models.User:
     properties:
-      confirmation:
-        type: string
-      confirmed:
-        type: boolean
       email:
+        example: user@example.com
         type: string
       id:
+        description: Скрываем ID
         type: integer
       password:
+        description: Пароль
+        example: password123
         type: string
       username:
         description: Имя пользователя
+        example: JohnDoe
         type: string
     type: object
 host: localhost:8081
@@ -44,9 +66,7 @@ paths:
         name: input
         required: true
         schema:
-          additionalProperties:
-            type: string
-          type: object
+          $ref: '#/definitions/handlers.ConfirmRequest'
       produces:
       - application/json
       responses:
@@ -70,10 +90,10 @@ paths:
       parameters:
       - description: Данные пользователя
         in: body
-        name: user
+        name: input
         required: true
         schema:
-          $ref: '#/definitions/models.User'
+          $ref: '#/definitions/handlers.RegisterRequest'
       produces:
       - application/json
       responses:

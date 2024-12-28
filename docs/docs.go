@@ -35,10 +35,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": {
-                                "type": "string"
-                            }
+                            "$ref": "#/definitions/handlers.ConfirmRequest"
                         }
                     }
                 ],
@@ -74,11 +71,11 @@ const docTemplate = `{
                 "parameters": [
                     {
                         "description": "Данные пользователя",
-                        "name": "user",
+                        "name": "input",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.User"
+                            "$ref": "#/definitions/handlers.RegisterRequest"
                         }
                     }
                 ],
@@ -170,11 +167,41 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "handlers.ConfirmRequest": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string",
+                    "example": "123456"
+                },
+                "email": {
+                    "type": "string",
+                    "example": "user@example.com"
+                }
+            }
+        },
         "handlers.ErrorResponse": {
             "type": "object",
             "properties": {
                 "error": {
                     "type": "string"
+                }
+            }
+        },
+        "handlers.RegisterRequest": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "user@example.com"
+                },
+                "password": {
+                    "type": "string",
+                    "example": "password123"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "JohnDoe"
                 }
             }
         },
@@ -189,24 +216,23 @@ const docTemplate = `{
         "models.User": {
             "type": "object",
             "properties": {
-                "confirmation": {
-                    "type": "string"
-                },
-                "confirmed": {
-                    "type": "boolean"
-                },
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "user@example.com"
                 },
                 "id": {
+                    "description": "Скрываем ID",
                     "type": "integer"
                 },
                 "password": {
-                    "type": "string"
+                    "description": "Пароль",
+                    "type": "string",
+                    "example": "password123"
                 },
                 "username": {
                     "description": "Имя пользователя",
-                    "type": "string"
+                    "type": "string",
+                    "example": "JohnDoe"
                 }
             }
         }
