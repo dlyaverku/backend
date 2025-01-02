@@ -15,7 +15,7 @@ import (
 // @title User API
 // @version 1.0
 // @description API для работы с пользователями.
-// @host localhost:8081
+// @host 5.35.83.98:8081
 // @BasePath /
 func main() {
 	database.Init() // Инициализация базы данных
@@ -41,6 +41,6 @@ func main() {
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Запуск сервера
-	log.Println("Server started at http://localhost:8081")
+	log.Println("Server started at http://5.35.83.98:8081")
 	router.Run(":8081")
 }

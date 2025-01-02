@@ -62,7 +62,7 @@ func GetUserByID(c *gin.Context) {
 	id := c.Param("id")
 	var user models.User
 	if err := database.DB.First(&user, id).Error; err != nil {
-		c.JSON(http.StatusNotFound, ErrorResponse{Error: "User not found"})
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "Пользователь не найден"})
 		return
 	}
 	c.JSON(http.StatusOK, user)
@@ -103,17 +103,17 @@ func RegisterHandler(c *gin.Context) {
 
 	// Сохраняем пользователя в базе
 	if err := database.DB.Create(&user).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to create user"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Ошибка создания пользователя"})
 		return
 	}
 
 	// Отправляем письмо с кодом подтверждения
 	if err := utils.SendEmail(user.Email, user.Confirmation); err != nil {
-		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to send email"})
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Ошибка отправки email"})
 		return
 	}
 
-	c.JSON(http.StatusCreated, SuccessResponse{Message: "User registered. Please confirm your email."})
+	c.JSON(http.StatusCreated, SuccessResponse{Message: "Пользователь зарегистрирован. Проверьте ваш email."})
 }
 
 // ConfirmHandler godoc
@@ -135,7 +135,7 @@ func ConfirmHandler(c *gin.Context) {
 
 	var user models.User
 	if err := database.DB.Where("email = ? AND confirmation = ?", input.Email, input.Code).First(&user).Error; err != nil {
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Invalid code"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Неверный код"})
 		return
 	}
 
@@ -143,12 +143,12 @@ func ConfirmHandler(c *gin.Context) {
 	if time.Now().After(user.ConfirmationExpiresAt) {
 		// Удаляем пользователя
 		database.DB.Delete(&user)
-		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Confirmation code expired"})
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "Код подтверждения истек"})
 		return
 	}
 
 	user.Confirmed = true
 	database.DB.Save(&user)
 
-	c.JSON(http.StatusOK, SuccessResponse{Message: "Email confirmed."})
+	c.JSON(http.StatusOK, SuccessResponse{Message: "Email подтвержден."})
 }
