@@ -1,48 +1,99 @@
 package utils
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"net/http"
+	"crypto/tls"
+	"net/smtp"
 )
 
-func SendEmail(to, code string) error {
-	apiKey := "mlsn.88159042d7104ee6f68578521250a68a738abd059523fe7aa83382f39dee9f50" // Вставьте ваш API-ключ
+// SendEmail отправляет email с кодом подтверждения
+func SendEmail(to, confirmationCode string) error {
+	// Настройки SMTP
+	smtpHost := "smtp.beget.com"
+	smtpPort := "465" // SSL порт
+	from := "service@thrivy.fun"
+	password := "Go7Wm2GxRe*3"
 
-	url := "https://api.mailersend.com/v1/email"
+	// Формирование сообщения
+	subject := "Subject: Подтверждение email\n"
+	fromHeader := "From: service@thrivy.fun\n"
+	toHeader := "To: " + to + "\n"
+	body := "Ваш код подтверждения: Действует 10 минут" + confirmationCode
+	message := []byte(fromHeader + toHeader + subject + "\n" + body)
 
-	// Создаем тело запроса
-	data := map[string]interface{}{
-		"from": map[string]string{
-			"email": "MS_3fLbiI@trial-x2p0347djd34zdrn.mlsender.net", // Замените на ваш подтвержденный email
-		},
-		"to": []map[string]string{
-			{"email": to},
-		},
-		"subject": "Confirmation Code",
-		"text":    "Your confirmation code is: " + code,
+	// Настройка TLS
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: true, // Убедись, что сертификат сервера проверен. Лучше включить это в продакшене.
+		ServerName:         smtpHost,
 	}
-	body, _ := json.Marshal(data)
 
-	// Отправляем запрос
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(body))
+	// Установка соединения с TLS
+	conn, err := tls.Dial("tcp", smtpHost+":"+smtpPort, tlsConfig)
 	if err != nil {
 		return err
 	}
-	req.Header.Set("Authorization", "Bearer "+apiKey)
-	req.Header.Set("Content-Type", "application/json")
+	defer conn.Close()
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	client, err := smtp.NewClient(conn, smtpHost)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer client.Close()
 
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
-		return fmt.Errorf("failed to send email: %v", resp.Status)
+	// Аутентификация
+	auth := smtp.PlainAuth("", from, password, smtpHost)
+	if err := client.Auth(auth); err != nil {
+		return err
 	}
 
-	return nil
+	// Указываем отправителя и получателя
+	if err := client.Mail(from); err != nil {
+		return err
+	}
+	if err := client.Rcpt(to); err != nil {
+		return err
+	}
+
+	// Отправляем сообщение
+	w, err := client.Data()
+	if err != nil {
+		return err
+	}
+	if _, err := w.Write(message); err != nil {
+		return err
+	}
+	if err := w.Close(); err != nil {
+		return err
+	}
+
+	return client.Quit()
 }
+
+// // loginAuth реализует аутентификацию методом LOGIN
+// func loginAuth(username, password string) smtp.Auth {
+// 	return &loginAuthStruct{
+// 		username: username,
+// 		password: password,
+// 	}
+// }
+
+// type loginAuthStruct struct {
+// 	username, password string
+// }
+
+// func (a *loginAuthStruct) Start(server *smtp.ServerInfo) (string, []byte, error) {
+// 	return "LOGIN", nil, nil
+// }
+
+// func (a *loginAuthStruct) Next(fromServer []byte, more bool) ([]byte, error) {
+// 	if more {
+// 		switch string(fromServer) {
+// 		case "Username:":
+// 			return []byte(a.username), nil
+// 		case "Password:":
+// 			return []byte(a.password), nil
+// 		default:
+// 			return nil, fmt.Errorf("неизвестный запрос от сервера: %s", fromServer)
+// 		}
+// 	}
+// 	return nil, nil
+// }
