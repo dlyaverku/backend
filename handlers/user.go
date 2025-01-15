@@ -70,96 +70,96 @@ func GetUserByID(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
-// JoinEvent godoc
-// @Summary Присоединиться к событию
-// @Description Добавляет пользователя к событию
-// @Tags События пользователя
-// @Accept  json
-// @Produce  json
-// @Param id path string true "ID события"
-// @Success 200 {object} SuccessResponse
-// @Failure 404 {object} ErrorResponse
-// @Failure 500 {object} ErrorResponse
-// @Router /events/{id}/join [post]
-func JoinEvent(c *gin.Context) {
-	var request struct {
-		UserID  int `json:"user_id"`
-		EventID int `json:"event_id"`
-	}
-
-	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(400, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Проверяем существование события
-	var event models.Event
-	if err := database.DB.First(&event, request.EventID).Error; err != nil {
-		c.JSON(404, gin.H{"error": "Event not found"})
-		return
-	}
-
-	// Добавляем пользователя к событию
-	event.UserIDs = append(event.UserIDs, request.UserID)
-	if err := database.DB.Save(&event).Error; err != nil {
-		c.JSON(500, gin.H{"error": "Failed to join event"})
-		return
-	}
-
-	c.JSON(200, gin.H{"message": "User joined event successfully"})
-}
-
-// GetUserByID godoc
-// @Summary Получить события пользователя по ID
-// @Description Возвращает события пользователя по его ID
-// @Tags users
-// @Accept  json
-// @Produce  json
-// @Param id path string true "ID пользователя"
-// @Success 200 {object} models.User
-// @Failure 404 {object} ErrorResponse
-// @Router /getUserEvent/{id} [get]
-func GetEventsByUserIDHandler(c *gin.Context) {
-	userID := c.Param("user_id")
-	var events []models.Event
-
-	if err := database.DB.Where("? = ANY(user_ids)", userID).Find(&events).Error; err != nil {
-		c.JSON(404, gin.H{"error": "No events found for user"})
-		return
-	}
-
-	c.JSON(200, gin.H{"events": events})
-}
-
-// func GetUserEvents(userID int) ([]models.Event, error) {
-// 	var user models.User
-// 	if err := database.DB.Preload("Events").First(&user, userID).Error; err != nil {
-// 		return nil, err
+// // JoinEvent godoc
+// // @Summary Присоединиться к событию
+// // @Description Добавляет пользователя к событию
+// // @Tags События пользователя
+// // @Accept  json
+// // @Produce  json
+// // @Param id path string true "ID события"
+// // @Success 200 {object} SuccessResponse
+// // @Failure 404 {object} ErrorResponse
+// // @Failure 500 {object} ErrorResponse
+// // @Router /events/{id}/join [post]
+// func JoinEvent(c *gin.Context) {
+// 	var request struct {
+// 		UserID  int `json:"user_id"`
+// 		EventID int `json:"event_id"`
 // 	}
-// 	return user.Events, nil
+
+// 	if err := c.ShouldBindJSON(&request); err != nil {
+// 		c.JSON(400, gin.H{"error": err.Error()})
+// 		return
+// 	}
+
+// 	// Проверяем существование события
+// 	var event models.Event
+// 	if err := database.DB.First(&event, request.EventID).Error; err != nil {
+// 		c.JSON(404, gin.H{"error": "Event not found"})
+// 		return
+// 	}
+
+// 	// Добавляем пользователя к событию
+// 	event.UserIDs = append(event.UserIDs, request.UserID)
+// 	if err := database.DB.Save(&event).Error; err != nil {
+// 		c.JSON(500, gin.H{"error": "Failed to join event"})
+// 		return
+// 	}
+
+// 	c.JSON(200, gin.H{"message": "User joined event successfully"})
 // }
 
-// GetEventParticipants godoc
-// @Summary Получить участников события
-// @Description Возвращает список участников события по его ID
-// @Tags events
-// @Accept  json
-// @Produce  json
-// @Param id path string true "ID события"
-// @Success 200 {array} models.User
-// @Failure 404 {object} ErrorResponse
-// @Router /events/{id}/participants [get]
-func GetEventParticipantsHandler(c *gin.Context) {
-	eventID := c.Param("id") // ID события из маршрута
-	var event models.Event
+// // GetUserByID godoc
+// // @Summary Получить события пользователя по ID
+// // @Description Возвращает события пользователя по его ID
+// // @Tags users
+// // @Accept  json
+// // @Produce  json
+// // @Param id path string true "ID пользователя"
+// // @Success 200 {object} models.User
+// // @Failure 404 {object} ErrorResponse
+// // @Router /getUserEvent/{id} [get]
+// func GetEventsByUserIDHandler(c *gin.Context) {
+// 	userID := c.Param("user_id")
+// 	var events []models.Event
 
-	if err := database.DB.Preload("Users").First(&event, eventID).Error; err != nil {
-		c.JSON(404, gin.H{"error": "Event not found"})
-		return
-	}
+// 	if err := database.DB.Where("? = ANY(user_ids)", userID).Find(&events).Error; err != nil {
+// 		c.JSON(404, gin.H{"error": "No events found for user"})
+// 		return
+// 	}
 
-	c.JSON(200, gin.H{"participants": event.UserIDs})
-}
+// 	c.JSON(200, gin.H{"events": events})
+// }
+
+// // func GetUserEvents(userID int) ([]models.Event, error) {
+// // 	var user models.User
+// // 	if err := database.DB.Preload("Events").First(&user, userID).Error; err != nil {
+// // 		return nil, err
+// // 	}
+// // 	return user.Events, nil
+// // }
+
+// // GetEventParticipants godoc
+// // @Summary Получить участников события
+// // @Description Возвращает список участников события по его ID
+// // @Tags events
+// // @Accept  json
+// // @Produce  json
+// // @Param id path string true "ID события"
+// // @Success 200 {array} models.User
+// // @Failure 404 {object} ErrorResponse
+// // @Router /events/{id}/participants [get]
+// func GetEventParticipantsHandler(c *gin.Context) {
+// 	eventID := c.Param("id") // ID события из маршрута
+// 	var event models.Event
+
+// 	if err := database.DB.Preload("Users").First(&event, eventID).Error; err != nil {
+// 		c.JSON(404, gin.H{"error": "Event not found"})
+// 		return
+// 	}
+
+// 	c.JSON(200, gin.H{"participants": event.UserIDs})
+// }
 
 // RegisterHandler godoc
 // @Summary Регистрация пользователя
