@@ -2,45 +2,38 @@ package main
 
 import (
 	"backend/database"
-	_ "backend/docs"
+	_ "backend/docs" // Импорт сгенерированной документации Swagger
 	"backend/handlers"
-	"log"
+	_ "backend/handlers/events"
 
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
-// @title User API
+// @title Email Verification API
 // @version 1.0
-// @description API для работы с пользователями.
-// @host 5.35.83.98:8081
+// @description This is a sample server for email verification.
+// @host localhost:8080
 // @BasePath /
+
 func main() {
-	database.Init() // Инициализация базы данных
+	r := gin.Default()
+	// Инициализация базы данных
+	database.Init()
 
-	router := gin.Default()
+	// Передаем базу данных в контекст запроса
+	r.Use(func(c *gin.Context) {
+		c.Set("db", database.DB)
+		c.Next()
+	})
+	r.POST("/send-code", handlers.SendVerificationCode)
+	r.POST("/verify-code", handlers.VerifyCode)
+	handlers.SetupRoutes(r)
+	// r.GET("/users", handlers.events.GetRegisteredUsers)
+	// r.POST("/events", handlers.CreateEventHandler)
+	// r.GET("/events", handlers.events.GetEvents)
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	// Настройка CORS
-	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://5.35.83.98"}, // Удаляем конечный слэш
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-	}))
-
-	// Маршруты API
-	router.GET("/users", handlers.GetUsers)
-	router.GET("/users/:id", handlers.GetUserByID)
-	router.POST("/register", handlers.RegisterHandler)
-	router.POST("/confirm", handlers.ConfirmHandler)
-
-	// Swagger
-	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
-
-	// Запуск сервера
-	log.Println("Server started at http://5.35.83.98:8081")
-	router.Run(":8081")
+	r.Run(":8080")
 }

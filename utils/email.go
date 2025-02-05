@@ -1,99 +1,74 @@
 package utils
 
 import (
-	"crypto/tls"
-	"net/smtp"
+	"bytes"
+	"fmt"
+	"html/template"
+	"math/rand"
+	"os"
+	"strconv"
+	"time"
+
+	"github.com/joho/godotenv"
+	"gopkg.in/mail.v2"
 )
 
-// SendEmail отправляет email с кодом подтверждения
-func SendEmail(to, confirmationCode string) error {
-	// Настройки SMTP
-	smtpHost := "smtp.beget.com"
-	smtpPort := "465" // SSL порт
-	from := "service@thrivy.fun"
-	password := "Go7Wm2GxRe*3"
-
-	// Формирование сообщения
-	subject := "Subject: Подтверждение email\n"
-	fromHeader := "From: service@thrivy.fun\n"
-	toHeader := "To: " + to + "\n"
-	body := "Ваш код подтверждения: Действует 10 минут" + confirmationCode
-	message := []byte(fromHeader + toHeader + subject + "\n" + body)
-
-	// Настройка TLS
-	tlsConfig := &tls.Config{
-		InsecureSkipVerify: true, // Убедись, что сертификат сервера проверен. Лучше включить это в продакшене.
-		ServerName:         smtpHost,
-	}
-
-	// Установка соединения с TLS
-	conn, err := tls.Dial("tcp", smtpHost+":"+smtpPort, tlsConfig)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	client, err := smtp.NewClient(conn, smtpHost)
-	if err != nil {
-		return err
-	}
-	defer client.Close()
-
-	// Аутентификация
-	auth := smtp.PlainAuth("", from, password, smtpHost)
-	if err := client.Auth(auth); err != nil {
-		return err
-	}
-
-	// Указываем отправителя и получателя
-	if err := client.Mail(from); err != nil {
-		return err
-	}
-	if err := client.Rcpt(to); err != nil {
-		return err
-	}
-
-	// Отправляем сообщение
-	w, err := client.Data()
-	if err != nil {
-		return err
-	}
-	if _, err := w.Write(message); err != nil {
-		return err
-	}
-	if err := w.Close(); err != nil {
-		return err
-	}
-
-	return client.Quit()
+func GenerateCode() string {
+	rand.Seed(time.Now().UnixNano())
+	return fmt.Sprintf("%06d", rand.Intn(1000000))
 }
 
-// // loginAuth реализует аутентификацию методом LOGIN
-// func loginAuth(username, password string) smtp.Auth {
-// 	return &loginAuthStruct{
-// 		username: username,
-// 		password: password,
-// 	}
-// }
+func SendEmail(to, code string) error {
+	// Загрузка переменных из .env
+	if err := godotenv.Load(); err != nil {
+		return fmt.Errorf("failed to load .env file: %v", err)
+	}
 
-// type loginAuthStruct struct {
-// 	username, password string
-// }
+	// Загрузка HTML-шаблона
+	tmpl, err := template.ParseFiles("email/index.html")
+	if err != nil {
+		return fmt.Errorf("failed to parse template: %v", err)
+	}
 
-// func (a *loginAuthStruct) Start(server *smtp.ServerInfo) (string, []byte, error) {
-// 	return "LOGIN", nil, nil
-// }
+	// Рендеринг шаблона
+	var body bytes.Buffer
+	data := struct {
+		To   string
+		Code string
+	}{
+		To:   to, // Передаём имя адресата
+		Code: code,
+	}
+	if err := tmpl.Execute(&body, data); err != nil {
+		return fmt.Errorf("failed to execute template: %v", err)
+	}
 
-// func (a *loginAuthStruct) Next(fromServer []byte, more bool) ([]byte, error) {
-// 	if more {
-// 		switch string(fromServer) {
-// 		case "Username:":
-// 			return []byte(a.username), nil
-// 		case "Password:":
-// 			return []byte(a.password), nil
-// 		default:
-// 			return nil, fmt.Errorf("неизвестный запрос от сервера: %s", fromServer)
-// 		}
-// 	}
-// 	return nil, nil
-// }
+	m := mail.NewMessage()
+	m.SetHeader("From", os.Getenv("SMTP_FROM"))
+	m.SetHeader("To", to)
+	m.SetHeader("Subject", "Verification Code")
+	m.SetBody("text/html", body.String())
+
+	godotenv.Load()                                 // Загружаем переменные из .env файла
+	port, _ := strconv.Atoi(os.Getenv("SMTP_PORT")) // Преобразуем порт в число
+	d := mail.NewDialer(
+		os.Getenv("SMTP_HOST"),
+		port,
+		os.Getenv("SMTP_USER"),
+		os.Getenv("SMTP_PASSWORD"),
+	)
+
+	// Логирование
+	fmt.Println("Sending email to:", to)
+	fmt.Println("Verification code:", code)
+	fmt.Println("Using SMTP server:", os.Getenv("SMTP_HOST"))
+
+	// Отправка email
+	if err := d.DialAndSend(m); err != nil {
+		fmt.Println("Failed to send email:", err)
+		return err
+	}
+
+	fmt.Println("Email sent successfully")
+	return nil
+}

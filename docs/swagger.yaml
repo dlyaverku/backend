@@ -31,20 +31,56 @@ definitions:
       message:
         type: string
     type: object
+  models.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  models.Event:
+    properties:
+      createdAt:
+        type: string
+      creator_id:
+        type: integer
+      date:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      images:
+        items:
+          type: string
+        type: array
+      main_image:
+        type: string
+      title:
+        type: string
+      updatedAt:
+        type: string
+      user_ids:
+        description: Массив ID участников
+        items:
+          type: integer
+        type: array
+    type: object
   models.User:
     properties:
+      createdAt:
+        type: string
       email:
         example: user@example.com
         type: string
+      events:
+        description: Связь с событиями (многие-ко-многим)
+        items:
+          $ref: '#/definitions/models.Event'
+        type: array
       id:
-        description: Скрываем ID
         type: integer
-      password:
-        description: Пароль
-        example: password123
+      updatedAt:
         type: string
       username:
-        description: Имя пользователя
         example: JohnDoe
         type: string
     type: object
@@ -81,14 +117,109 @@ paths:
       summary: Подтверждение email
       tags:
       - auth
+  /events:
+    get:
+      description: Возвращает список всех событий
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of events
+          schema:
+            items:
+              $ref: '#/definitions/models.Event'
+            type: array
+      summary: Получить все события
+      tags:
+      - События
+    post:
+      consumes:
+      - application/json
+      description: Создание события
+      parameters:
+      - description: Event data
+        in: body
+        name: event
+        required: true
+        schema:
+          $ref: '#/definitions/models.Event'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created event
+          schema:
+            $ref: '#/definitions/models.Event'
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Создать новое событие
+      tags:
+      - События
+  /events/{id}/participants:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает список участников события по его ID
+      parameters:
+      - description: ID события
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Получить участников события
+      tags:
+      - events
+  /getUserEvent/{id}:
+    get:
+      consumes:
+      - application/json
+      description: Возвращает события пользователя по его ID
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Получить события пользователя по ID
+      tags:
+      - users
   /register:
     post:
       consumes:
       - application/json
-      description: Регистрирует нового пользователя и отправляет код подтверждения
-        на email
+      description: Отправляет код подтверждения на email
       parameters:
-      - description: Данные пользователя
+      - description: Данные для регистрации
         in: body
         name: input
         required: true
@@ -97,14 +228,10 @@ paths:
       produces:
       - application/json
       responses:
-        "201":
-          description: Created
+        "200":
+          description: OK
           schema:
             $ref: '#/definitions/handlers.SuccessResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/handlers.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
