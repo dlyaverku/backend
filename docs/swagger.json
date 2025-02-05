@@ -6,7 +6,7 @@
         "contact": {},
         "version": "1.0"
     },
-    "host": "localhost:8081",
+    "host": "5.35.83.98:8080",
     "basePath": "/",
     "paths": {
         "/confirm": {

@@ -14,7 +14,7 @@ import (
 // @title Email Verification API
 // @version 1.0
 // @description This is a sample server for email verification.
-// @host localhost:8080
+// @host 5.35.83.98:8080
 // @BasePath /
 
 func main() {

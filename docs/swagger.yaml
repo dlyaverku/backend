@@ -84,7 +84,7 @@ definitions:
         example: JohnDoe
         type: string
     type: object
-host: localhost:8081
+host: 5.35.83.98:8080
 info:
   contact: {}
   description: API для работы с пользователями.
