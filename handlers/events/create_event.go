@@ -23,16 +23,18 @@ import (
 // @Router /events [post]
 func CreateEventHandler(c *gin.Context) {
 	var request struct {
-		Title          string   `json:"title"`
-		Description    string   `json:"description"`
-		MainImage      string   `json:"main_image"`
-		Images         []string `json:"images"`
-		CreatorID      uint     `json:"creator_id"`
-		Date           string   `json:"date"`
-		Location       string   `json:"location"`
-		ParticipantIDs []uint   `json:"participant_ids"`
+		Title        string   `json:"title"`
+		Description  string   `json:"description"`
+		MainImage    string   `json:"main_image"`
+		Images       []string `json:"images"`
+		CreatorID    uint     `json:"creator_id"`
+		Date         string   `json:"date"`
+		Location     string   `json:"location"`
+		Participants []struct {
+			ID uint `json:"id"`
+		} `json:"participants"`
 	}
-	fmt.Println("Participant IDs:", request.ParticipantIDs)
+
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -41,23 +43,31 @@ func CreateEventHandler(c *gin.Context) {
 	// Проверяем дату
 	parsedDate, err := utils.ParseAndValidateDate(request.Date)
 	if err != nil {
-		switch err {
-		case utils.ErrInvalidDateFormat:
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		case utils.ErrDateInPast:
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		default:
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при проверке даты"})
-		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	// Проверяем, существует ли создатель
+	// Проверяем существование создателя
 	var creator models.User
 	if err := database.DB.First(&creator, request.CreatorID).Error; err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Создатель не найден"})
 		return
 	}
+
+	// Проверяем всех участников перед созданием события
+	var participants []models.User
+	for _, p := range request.Participants {
+		var user models.User
+		if err := database.DB.First(&user, p.ID).Error; err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("Участник с ID %d не найден", p.ID)})
+			return // Прерываем выполнение ДО сохранения события
+		}
+		participants = append(participants, user)
+	}
+
+	// Используем транзакцию для атомарности
+	tx := database.DB.Begin()
+	//defer tx.RollbackUnlessCommitted()
 
 	// Создаем событие
 	event := models.Event{
@@ -66,36 +76,28 @@ func CreateEventHandler(c *gin.Context) {
 		MainImage:   request.MainImage,
 		Images:      request.Images,
 		CreatorID:   request.CreatorID,
-		Date:        parsedDate.Format("02.01 15:04"), // Сохраняем дату без года
+		Date:        parsedDate.Format("02.01 15:04"),
 		Location:    request.Location,
 	}
 
-	// Сохраняем событие в базе данных
-	if err := database.DB.Create(&event).Error; err != nil {
+	if err := tx.Create(&event).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при создании события"})
 		return
 	}
 
-	// Добавляем участников к событию
-	var participants []models.User
-	for _, userID := range request.ParticipantIDs {
-		var user models.User
-		if err := database.DB.First(&user, userID).Error; err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Участник не найден"})
-			return
-		}
-		participants = append(participants, user)
-	}
-
-	if err := database.DB.Model(&event).Association("Participants").Append(participants); err != nil {
+	// Добавляем участников
+	if err := tx.Model(&event).Association("Participants").Append(participants); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при добавлении участников"})
 		return
 	}
 
-	// Получаем полную информацию о событии с участниками
+	// Фиксируем транзакцию
+	tx.Commit()
+
+	// Возвращаем полное событие
 	var fullEvent models.Event
 	if err := database.DB.Preload("Participants").First(&fullEvent, event.ID).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при получении информации о событии"})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при получении события"})
 		return
 	}
 
