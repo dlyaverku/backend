@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #ffffff;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);">
+        <tr>
+            <td style="background-color: #beaaff; text-align: center;">
+                <img src="https://api-postcards.designmodo.com/files/images/user-122714/image-1737651436134.gif" alt="Thrivy" style="max-width: 100%; height: auto;">
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 20px; font-size: 22px; text-align: left; background-color: #beaaff; color: #ffffff;">
+                <h2 style="font-size: 24px; margin: 0; color: #ffffff !important;">Hi <a href="#" style="text-decoration:none; color:#ffffff">{{to}}</a>,</h2>
+                <p style="margin: 10px 0; color: #ffffff !important;" >Your login code is:</p>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 10px 0 5px;">
+                    <tr>
+                        <td align="center" style="font-size: 24px; font-weight: bold; color: #141414; background-color: #f7f7f7; padding: 10px; border-radius: 12px; cursor: pointer; letter-spacing: 15px;">
+                            {{code}}
+                        </td>
+                    </tr>
+                </table>
+                <p id="expire" style="margin: 0px 0 15px; font-size: 14px; color: #ffffff !important;">Please note this code is only valid for 10 minutes.</p>
+                <p style="margin: 10px 0; color: #ffffff !important;">Welcome to Thrivy! You are now part of a community of athletes, from beginners to professionals, using Thrivy for collaborative events. This is where overcoming...</p>
+            </td>
+        </tr>
+        <tr>
+            <td style="text-align: center; background-color: #beaaff;">
+                <a href="https://t.me/thrivybot" target="_blank">
+                    <img src="https://i.imgur.com/BNyKJEZ.png" alt="Open in Telegram" style="width: 50%; height: 60px; cursor: pointer;">
+                </a>
+                <div style="width: 80%; height: 2px; background-color: #ffffff; margin: 20px auto;"></div>
+            </td>
+        </tr>
+        <tr>
+            <td style="background-color: #beaaff; padding: 20px; text-align: center; font-size: 12px; color: #ffffff;">
+                <p style="margin: 0;">Contact us:</p>
+                <div style="display: table; width: 50%; margin: 15px auto;">
+                    <div style="display: table-cell; text-align: center; padding: 0 7.5px;">
+                        <a href="mailto:info@thrivy.com" target="_blank" style="display: inline-block;">
+                            <img src="https://cloudfilesdm.com/postcards/image-1737572596213.png" alt="Email" style="display: block; width: 24px; height: 24px;">
+                        </a>
+                    </div>
+                    <div style="display: table-cell; text-align: center; padding: 0 7.5px;">
+                        <a href="https://t.me/thrivy" target="_blank" style="display: inline-block;">
+                            <img src="https://cloudfilesdm.com/postcards/bca3fbb1902fdfb2615f4f5ed0105a12.png" alt="Telegram" style="display: block; width: 24px; height: 24px;">
+                        </a>
+                    </div>
+                    <div style="display: table-cell; text-align: center; padding: 0 7.5px;">
+                        <a href="https://thrivy.com" target="_blank" style="display: inline-block;">
+                            <img src="https://cloudfilesdm.com/postcards/image-1737572165400.png" alt="Website" style="display: block; width: 24px; height: 24px;">
+                        </a>
+                    </div>
+                </div>
+                <p style="margin: 10px 0;">Want to change which emails you receive from us? You can update your preferences or <a href="#" target="_blank" style="color: #ffffff; text-decoration: none;">unsubscribe</a>. You can view our <a href="#" target="_blank" style="color: #ffffff; text-decoration: none;">privacy policy</a>.</p>
+            </td>
+        </tr>
+    </table>
+
+    <script>
+        function copyCode() {
+            const code = "$code";
+            navigator.clipboard.writeText(code).then(() => {
+                alert("Code copied to clipboard!");
+            }).catch(() => {
+                alert("Failed to copy code.");
+            });
+        }
+    </script>
+</body>
+</html>
