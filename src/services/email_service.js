@@ -36,7 +36,7 @@ const sendVerificationCode = async (email, code) => {
   });
 
   const mailOptions = {
-    from: `Thrivy <${process.env.EMAIL_USER}>`,
+    from: `Thrivy - App<${process.env.EMAIL_USER}>`,
     to: email,
     subject: 'Код подтверждения',
     html: htmlBody

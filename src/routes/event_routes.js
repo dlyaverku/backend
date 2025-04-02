@@ -3,9 +3,9 @@ const { body } = require('express-validator');
 const { authenticate } = require('../middleware/auth');
 const { validateRequest } = require('../middleware/validation');
 const { upload } = require('../services/file_service');
-const User = require('../models/User').User; // Исправлено для импорта User из объекта
+const User = require('../models/users').User; // Исправлено для импорта User из объекта
 const { Op } = require('sequelize');
-const Event = require('../models/Event');
+const Event = require('../models/event');
 const { sequelize } = require('../config/database');
 const moment = require('moment');
 
