@@ -1,4 +1,4 @@
-const { User, UserRating } = require('../models/User');
+const { User, UserRating } = require('../models/users');
 const { getFileUrl, deleteFile, upload } = require('../services/file_service');
 const { sequelize } = require('../config/database');
 const { Op } = require('sequelize');

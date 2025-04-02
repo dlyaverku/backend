@@ -1,7 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const jwt = require('jsonwebtoken');
-const { User } = require('../models/User');
-const { Verification } = require('../models/Verification');
+const { User } = require('../models/users');
+const { Verification } = require('../models/verification');
 const { sendVerificationCode } = require('../services/email_service');
 require('dotenv').config();
 
