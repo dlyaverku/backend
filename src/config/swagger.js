@@ -1,6 +1,8 @@
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
 const basicAuth = require('express-basic-auth');
+require('dotenv').config();
+const expressBasicAuth = require('express-basic-auth');
 
 // Swagger опции
 const swaggerOptions = {
@@ -41,9 +43,11 @@ const swaggerDocs = swaggerJsDoc(swaggerOptions);
 module.exports = (app) => {
   // Базовая аутентификация для Swagger UI
   app.use('/api-docs', basicAuth({
-    users: { 'admin': 'Lacoste212321' }, // Изменить на желаемые логин и пароль
+    users: {
+        [process.env.SWAGGER_USER]: process.env.SWAGGER_PASSWORD
+    },
     challenge: true
-  }));
+}));
   
   // Swagger UI
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
