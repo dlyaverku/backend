@@ -4,7 +4,7 @@ const basicAuth = require('express-basic-auth');
 require('dotenv').config();
 const expressBasicAuth = require('express-basic-auth');
 
-// Swagger опции
+
 const swaggerOptions = {
   swaggerDefinition: {
     openapi: '3.0.0',
