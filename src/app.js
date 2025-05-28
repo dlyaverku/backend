@@ -45,7 +45,9 @@ async function startServer() {
     console.error('Не удалось подключиться к базе данных:', error);
   }
 }
-
+app.get('/', (req, res) => {
+  res.send('Thrivy backend работает!');
+});
 startServer();
 
 module.exports = app;
