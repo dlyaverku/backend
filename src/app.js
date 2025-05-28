@@ -52,6 +52,7 @@ app.use((req, res, next) => {
   });
 });
 
+
 // Swagger документация
 swaggerSetup(app);
 
@@ -69,16 +70,19 @@ async function startServer() {
     await sequelize.authenticate();
     console.log('База данных подключена успешно.');
     await sequelize.sync();
-    app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
       console.log(`Сервер запущен на порту ${PORT}`);
     });
   } catch (error) {
     console.error('Не удалось подключиться к базе данных:', error);
   }
 }
+
 app.get('/', (req, res) => {
   res.send('Thrivy backend работает!');
 });
+
+
 startServer();
 
 module.exports = app;
