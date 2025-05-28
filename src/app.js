@@ -21,6 +21,37 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 
+app.use((req, res, next) => {
+  // Пропускаем auth роуты и swagger
+  if (req.path.startsWith('/api/auth') || req.path.startsWith('/api-docs')) {
+    return next();
+  }
+
+  const authHeader = req.headers['authorization'];
+  const tokenFromHeader = authHeader && authHeader.split(' ')[1];
+  const tokenFromQuery = req.query.token;
+  
+  const token = tokenFromHeader || tokenFromQuery;
+  
+  if (!token) {
+    return res.status(401).json({ 
+      success: false,
+      message: 'Token required. Use ?token=YOUR_TOKEN in URL or Authorization header' 
+    });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({
+        success: false,
+        message: 'Invalid token'
+      });
+    }
+    req.user = user;
+    next();
+  });
+});
+
 // Swagger документация
 swaggerSetup(app);
 
