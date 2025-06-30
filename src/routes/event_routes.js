@@ -254,33 +254,32 @@ router.post('/',
   validateRequest,
   async (req, res) => {
     try {
-      let mainImagePath = req.files && req.files.mainImage && req.files.mainImage[0] 
-        ? req.files.mainImage[0].filename 
+      // Сохраняем только filename, а не path!
+      let mainImageFilename = req.files && req.files.mainImage && req.files.mainImage[0]
+        ? req.files.mainImage[0].filename
         : "";
-      let imagesPath = req.files && req.files.images 
-        ? req.files.images.map(file => file.filename) 
+      let imagesFilenames = req.files && req.files.images
+        ? req.files.images.map(file => file.filename)
         : [];
-      let routeFilePath = req.files && req.files.routeFile && req.files.routeFile[0] 
-        ? req.files.routeFile[0].filename 
+      let routeFileFilename = req.files && req.files.routeFile && req.files.routeFile[0]
+        ? req.files.routeFile[0].filename
         : "";
 
       // Если включен S3, загружаем файлы в S3 и удаляем локальные
       if (process.env.USE_S3 === 'true') {
+        const fs = require('fs');
         if (req.files && req.files.mainImage && req.files.mainImage[0]) {
           await uploadS3(req.files.mainImage[0]);
-          const fs = require('fs');
           fs.unlinkSync(req.files.mainImage[0].path);
         }
         if (req.files && req.files.images) {
           for (const file of req.files.images) {
             await uploadS3(file);
-            const fs = require('fs');
             fs.unlinkSync(file.path);
           }
         }
         if (req.files && req.files.routeFile && req.files.routeFile[0]) {
           await uploadS3(req.files.routeFile[0]);
-          const fs = require('fs');
           fs.unlinkSync(req.files.routeFile[0].path);
         }
       }
@@ -291,23 +290,23 @@ router.post('/',
         tags = tags.split(',').map(tag => tag.trim());
       }
 
-      // Создаем новое событие с измененной структурой duration
+      // Создаем новое событие, сохраняем только filename!
       const newEvent = await Event.create({
         title: req.body.title,
         location: req.body.location,
         dateTime: new Date(req.body.dateTime),
         description: req.body.description || "",
-        mainImage: mainImagePath,
-        images: imagesPath,
-        duration: req.body.duration || "", // Теперь duration - строка
+        mainImage: mainImageFilename,
+        images: imagesFilenames,
+        duration: req.body.duration || "",
         cost: req.body.cost ? parseFloat(req.body.cost) : 0,
         tags: tags || [],
         skillLevel: req.body.skillLevel || "",
         route: req.body.route || "",
-        routeFile: routeFilePath,
-        creatorId: req.user.id, // ID пользователя из токена аутентификации
-        participants: [req.user.id], // Создатель автоматически становится участником
-        guestParticipants: [] // Поле для хранения приглашенных гостей
+        routeFile: routeFileFilename,
+        creatorId: req.user.id,
+        participants: [req.user.id],
+        guestParticipants: []
       });
 
       // Преобразуем для безопасного использования в Dart
