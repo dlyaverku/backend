@@ -1,5 +1,5 @@
 const { User, UserRating } = require('../models/users');
-const { getFileUrl, deleteFile, upload } = require('../services/file_service');
+const { getFileUrl, deleteFile, upload, uploadS3 } = require('../services/file_service');
 const { sequelize } = require('../config/database');
 const { Op } = require('sequelize');
 
@@ -215,22 +215,18 @@ const updateUserProfileController = async (req, res, next) => {
 const updateUserAvatarController = async (req, res, next) => {
   try {
     const { id } = req.params;
-    
-    // Проверяем, что пользователь обновляет свой аватар
     if (id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Вы можете обновлять только свой аватар'
       });
     }
-
     if (!req.file) {
       return res.status(400).json({
         success: false,
         message: 'Файл аватара не загружен'
       });
     }
-
     const user = await User.findByPk(id);
     if (!user) {
       return res.status(404).json({
@@ -238,20 +234,23 @@ const updateUserAvatarController = async (req, res, next) => {
         message: 'Пользователь не найден'
       });
     }
-
     // Удаляем старый аватар, если он существует
     if (user.avatar) {
       deleteFile(user.avatar);
     }
-
-    // Получаем URL для нового аватара
-    const avatarUrl = getFileUrl(req, req.file.filename);
-
+    let avatarFilename = req.file.filename;
+    // Если включен S3, загружаем файл в S3 и удаляем локальный
+    if (process.env.USE_S3 === 'true') {
+      await uploadS3(req.file);
+      const fs = require('fs');
+      fs.unlinkSync(req.file.path);
+    }
     // Обновляем пользователя
     await user.update({
-      avatar: req.file.path.replace(/\\/g, '/')
+      avatar: avatarFilename
     });
-
+    // Получаем URL для нового аватара
+    const avatarUrl = getFileUrl(req, avatarFilename);
     res.status(200).json({
       success: true,
       message: 'Аватар успешно обновлен',

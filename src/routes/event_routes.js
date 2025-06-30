@@ -2,7 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const { authenticate } = require('../middleware/auth');
 const { validateRequest } = require('../middleware/validation');
-const { upload } = require('../services/file_service');
+const { upload, getFileUrl, uploadS3 } = require('../services/file_service');
 const User = require('../models/users').User; // Исправлено для импорта User из объекта
 const { Op } = require('sequelize');
 const Event = require('../models/event');
@@ -25,10 +25,10 @@ const formatDateTime = (dateTime) => {
 /**
  * Преобразует объект события для безопасной работы с Dart (null safety)
  * @param {Object} event - объект события из БД
+ * @param {Object} req - объект запроса
  * @returns {Object} - безопасный для Dart объект
  */
-const prepareSafeEvent = (event) => {
-  // Обработка guestParticipants
+const prepareSafeEvent = (event, req) => {
   let guestParticipants = event.guestParticipants;
   if (typeof guestParticipants === 'string') {
     try {
@@ -38,36 +38,27 @@ const prepareSafeEvent = (event) => {
       guestParticipants = [];
     }
   }
-  
-  // Проверяем, что это массив
   if (!Array.isArray(guestParticipants)) {
     guestParticipants = [];
   }
-  
-  // Считаем общее количество участников
   const participantsCount = Array.isArray(event.participants) ? event.participants.length : 0;
   const guestsCount = guestParticipants.reduce((sum, guest) => sum + guest.count, 0);
-  
   const safeEvent = {
     ...event,
-    // Используем обработанные значения
     participants: Array.isArray(event.participants) ? event.participants : [],
     guestParticipants: guestParticipants,
     totalParticipants: participantsCount + guestsCount,
-    
-    // Остальные поля
-    mainImage: event.mainImage || "",
-    images: event.images || [],
+    mainImage: getFileUrl(req, event.mainImage),
+    images: Array.isArray(event.images) ? event.images.map(img => getFileUrl(req, img)) : [],
     description: event.description || "",
     duration: event.duration ? String(event.duration) : "",
     cost: event.cost || 0,
     tags: event.tags || [],
     skillLevel: event.skillLevel || "",
     route: event.route || "",
-    routeFile: event.routeFile || "",
+    routeFile: getFileUrl(req, event.routeFile),
     formattedDateTime: formatDateTime(event.dateTime)
   };
-  
   return safeEvent;
 };
 
@@ -163,7 +154,7 @@ router.get('/', authenticate, async (req, res) => {
         const plainEvent = event.toJSON();
         
         // Подготавливаем для клиента
-        return prepareSafeEvent(plainEvent);
+        return prepareSafeEvent(plainEvent, req);
       });
       
       res.status(200).json({
@@ -263,25 +254,43 @@ router.post('/',
   validateRequest,
   async (req, res) => {
     try {
-      // Обработка загруженных файлов
-      const mainImagePath = req.files && req.files.mainImage && req.files.mainImage[0] 
-        ? req.files.mainImage[0].path 
+      let mainImagePath = req.files && req.files.mainImage && req.files.mainImage[0] 
+        ? req.files.mainImage[0].filename 
         : "";
-        
-      const imagesPath = req.files && req.files.images 
-        ? req.files.images.map(file => file.path) 
+      let imagesPath = req.files && req.files.images 
+        ? req.files.images.map(file => file.filename) 
         : [];
-        
-      const routeFilePath = req.files && req.files.routeFile && req.files.routeFile[0] 
-        ? req.files.routeFile[0].path 
+      let routeFilePath = req.files && req.files.routeFile && req.files.routeFile[0] 
+        ? req.files.routeFile[0].filename 
         : "";
-      
+
+      // Если включен S3, загружаем файлы в S3 и удаляем локальные
+      if (process.env.USE_S3 === 'true') {
+        if (req.files && req.files.mainImage && req.files.mainImage[0]) {
+          await uploadS3(req.files.mainImage[0]);
+          const fs = require('fs');
+          fs.unlinkSync(req.files.mainImage[0].path);
+        }
+        if (req.files && req.files.images) {
+          for (const file of req.files.images) {
+            await uploadS3(file);
+            const fs = require('fs');
+            fs.unlinkSync(file.path);
+          }
+        }
+        if (req.files && req.files.routeFile && req.files.routeFile[0]) {
+          await uploadS3(req.files.routeFile[0]);
+          const fs = require('fs');
+          fs.unlinkSync(req.files.routeFile[0].path);
+        }
+      }
+
       // Обработка тегов (если они переданы в виде строки)
       let tags = req.body.tags;
       if (typeof tags === 'string') {
         tags = tags.split(',').map(tag => tag.trim());
       }
-      
+
       // Создаем новое событие с измененной структурой duration
       const newEvent = await Event.create({
         title: req.body.title,
@@ -300,10 +309,10 @@ router.post('/',
         participants: [req.user.id], // Создатель автоматически становится участником
         guestParticipants: [] // Поле для хранения приглашенных гостей
       });
-      
+
       // Преобразуем для безопасного использования в Dart
-      const safeEvent = prepareSafeEvent(newEvent.toJSON ? newEvent.toJSON() : newEvent);
-      
+      const safeEvent = prepareSafeEvent(newEvent.toJSON ? newEvent.toJSON() : newEvent, req);
+
       res.status(201).json({
         success: true,
         message: 'Событие успешно создано',
@@ -366,7 +375,7 @@ router.get('/:id', authenticate, async (req, res) => {
     
     // Преобразуем для безопасного использования в Dart
     const plainEvent = event.toJSON ? event.toJSON() : event;
-    const safeEvent = prepareSafeEvent(plainEvent);
+    const safeEvent = prepareSafeEvent(plainEvent, req);
     
     // Добавим информацию о создателе
     if (creator) {
@@ -452,7 +461,7 @@ router.post('/:id/invite', authenticate, async (req, res) => {
     
     // Возвращаем обновленное событие
     const plainEvent = event.toJSON ? event.toJSON() : event;
-    const safeEvent = prepareSafeEvent(plainEvent);
+    const safeEvent = prepareSafeEvent(plainEvent, req);
     
     res.status(200).json({
       success: true,
@@ -514,7 +523,7 @@ router.post('/:id/join', authenticate, async (req, res) => {
       
       // Возвращаем обновленное событие
       const plainEvent = event.toJSON();
-      const safeEvent = prepareSafeEvent(plainEvent);
+      const safeEvent = prepareSafeEvent(plainEvent, req);
       
       res.status(200).json({
         success: true,

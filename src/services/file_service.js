@@ -2,6 +2,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const AWS = require('aws-sdk');
 
 // Настройка хранилища для загрузки файлов
 const storage = multer.diskStorage({
@@ -53,9 +54,40 @@ const deleteFile = (filePath) => {
   return false;
 };
 
-// Получение URL файла
+const s3 = new AWS.S3({
+  accessKeyId: process.env.S3_ACCESS_KEY_ID,
+  secretAccessKey: process.env.S3_SECRET_ACCESS_KEY,
+  region: process.env.S3_REGION
+});
+
+const S3_BUCKET = process.env.S3_BUCKET_NAME;
+const S3_PUBLIC_URL = process.env.S3_PUBLIC_URL;
+
+// Загрузка файла в S3
+const uploadS3 = async (file) => {
+  const fileContent = fs.readFileSync(file.path);
+  const params = {
+    Bucket: S3_BUCKET,
+    Key: file.filename,
+    Body: fileContent,
+    ContentType: file.mimetype,
+    ACL: 'public-read'
+  };
+  await s3.upload(params).promise();
+  return getS3FileUrl(file.filename);
+};
+
+const getS3FileUrl = (filename) => {
+  if (!filename) return '';
+  return `${S3_PUBLIC_URL}/${filename}`;
+};
+
+// Обновляю getFileUrl для поддержки S3 и локального режима
 const getFileUrl = (req, filename) => {
   if (!filename) return '';
+  if (process.env.USE_S3 === 'true') {
+    return getS3FileUrl(filename);
+  }
   const protocol = req.protocol;
   const host = req.get('host');
   return `${protocol}://${host}/uploads/${filename}`;
@@ -64,5 +96,7 @@ const getFileUrl = (req, filename) => {
 module.exports = {
   upload,
   deleteFile,
-  getFileUrl
+  getFileUrl,
+  uploadS3,
+  getS3FileUrl
 };
