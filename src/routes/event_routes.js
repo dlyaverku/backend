@@ -48,7 +48,7 @@ const prepareSafeEvent = (event, req) => {
     participants: Array.isArray(event.participants) ? event.participants : [],
     guestParticipants: guestParticipants,
     totalParticipants: participantsCount + guestsCount,
-    mainImage: getFileUrl(req, event.mainImage),
+    mainImage: event.mainImage ? getFileUrl(req, event.mainImage) : '',
     images: Array.isArray(event.images) ? event.images.map(img => getFileUrl(req, img)) : [],
     description: event.description || "",
     duration: event.duration ? String(event.duration) : "",
@@ -56,7 +56,7 @@ const prepareSafeEvent = (event, req) => {
     tags: event.tags || [],
     skillLevel: event.skillLevel || "",
     route: event.route || "",
-    routeFile: getFileUrl(req, event.routeFile),
+    routeFile: event.routeFile ? getFileUrl(req, event.routeFile) : '',
     formattedDateTime: formatDateTime(event.dateTime)
   };
   return safeEvent;
