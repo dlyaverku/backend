@@ -1,5 +1,4 @@
-const swaggerJsdoc = require("swagger-jsdoc");
-const swaggerUi = require("swagger-ui-express");
+const swaggerJSDoc = require("swagger-jsdoc");
 
 const options = {
   definition: {
@@ -7,15 +6,13 @@ const options = {
     info: {
       title: "Thrivy Backend API",
       version: "1.0.0",
-      description: "API документация для беговых гонок",
+      description: "API documentation for Thrivy running app",
     },
-    servers: [
-      { url: "https://backend.thrivy.fun/api" }
-    ]
+    servers: [{ url: "http://localhost:3000" }],
   },
-  apis: ["./src/routes/*.js"], // аннотации в роутерах
+  apis: ["./src/routes/*.js"], // берём описание прямо из роутов
 };
 
-const swaggerSpec = swaggerJsdoc(options);
+const swaggerSpec = swaggerJSDoc(options);
 
-module.exports = { swaggerUi, swaggerSpec };
+module.exports = swaggerSpec;
