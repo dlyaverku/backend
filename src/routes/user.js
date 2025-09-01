@@ -1,16 +1,32 @@
 const express = require("express");
 const router = express.Router();
-const userController = require("../controllers/user_controller");       
 
 /**
- * @openapi
- * /users:
+ * @swagger
+ * /api/users:
  *   get:
- *     summary: Получить список пользователей
+ *     summary: Get all users (mock)
+ *     tags: [Users]
  *     responses:
  *       200:
- *         description: Успешно
+ *         description: Returns a list of users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: integer
+ *                   name:
+ *                     type: string
  */
-router.get("/", userController.getAll);
+router.get("/", (req, res) => {
+  res.json([
+    { id: 1, name: "Alice" },
+    { id: 2, name: "Bob" },
+  ]);
+});
 
 module.exports = router;
