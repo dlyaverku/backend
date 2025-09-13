@@ -4,7 +4,6 @@ const swaggerSpec = require("./config/swagger");
 const cors = require("cors");
 
 const usersRouter = require("./routes/users");
-const auth = require("./middleware/auth");
 
 const app = express();
 app.use(express.json());
