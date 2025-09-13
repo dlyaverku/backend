@@ -3,12 +3,13 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./config/swagger");
 const cors = require("cors");
 const basicAuth = require("express-basic-auth");
-
+require("dotenv").config();
 
 const usersRouter = require("./routes/users");
 
 const app = express();
 app.use(express.json());
+
 
 // CORS для фронта и Swagger
 app.use(cors({

@@ -9,7 +9,7 @@ const options = {
     },
     servers: [
       {
-        url: "https://backend.thrivy.fun/api",
+        url: "https://backend.thrivy.fun",
       },
     ],
   },
