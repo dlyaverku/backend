@@ -1,18 +1,20 @@
-const swaggerJSDoc = require("swagger-jsdoc");
+const swaggerJsdoc = require("swagger-jsdoc");
 
 const options = {
   definition: {
     openapi: "3.0.0",
     info: {
-      title: "Thrivy Backend API",
+      title: "Thrivy API",
       version: "1.0.0",
-      description: "API documentation for Thrivy running app",
     },
-    servers: [{ url: "http://localhost:3000" }],
+    servers: [
+      {
+        url: "https://backend.thrivy.fun/api",
+      },
+    ],
   },
-  apis: ["./src/routes/*.js"], // берём описание прямо из роутов
+  apis: ["./src/routes/*.js"],
 };
 
-const swaggerSpec = swaggerJSDoc(options);
-
+const swaggerSpec = swaggerJsdoc(options);
 module.exports = swaggerSpec;
